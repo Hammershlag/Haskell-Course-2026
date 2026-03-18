@@ -86,3 +86,63 @@ power b e = go e 1
         go :: Int -> Int -> Int
         go 0 !acc = acc
         go n !acc = go (n-1) (acc*b)
+
+-- 8. Running Maximum
+
+listMax :: [Int] -> Int
+listMax (x:xs) = go x xs
+    where
+        go acc [] = acc
+        go acc (y:ys) = let acc' = max acc y
+                        in acc' `seq` go acc' ys
+
+listMax' :: [Int] -> Int
+listMax' (x:xs) = go x xs
+    where
+        go !acc [] = acc
+        go !acc (y:ys) = go (max acc y) ys
+
+-- 9. Infinite Prime Stream
+
+primes :: [Int]
+primes = sieve [2..]
+
+isPrime'' :: Int -> Bool
+isPrime'' !n = takeWhile (<= n) primes & any (==n)
+
+-- 10. Strict Accumulation and Space Leaks
+
+-- a)
+
+mean :: [Double] -> Double
+mean [] = 0
+mean xs = let (s, n) = go xs 0 0
+        in s / n
+    where
+        go [] s n = (s, n)
+        go (y:ys) s n = go ys (s+y) (n+1)
+
+-- b)
+
+mean' :: [Double] -> Double
+mean' [] = 0
+mean' xs = let (s, n) = go xs 0 0
+        in s / n
+    where
+        go [] !s !n = (s, n)
+        go (y:ys) !s !n = go ys (s+y) (n+1)
+
+-- Is a bang pattern on the pair itself sufficient, or do the components also need to be forced individually?
+-- Bang patter on a pair is not sufficient, it has to be forced on each component
+
+-- c)
+
+meanAndVariance :: [Double] -> (Double, Double)
+meanAndVariance xs =
+        let (s, s2, n) = go xs 0 0 0
+            mu = s / n
+            var = (s2 / n) - mu*mu
+        in (mu, var)
+     where
+        go []     !s !s2 !n = (s, s2, n)
+        go (x:xs) !s !s2 !n = go xs (s + x) (s2 + x*x) (n + 1)
