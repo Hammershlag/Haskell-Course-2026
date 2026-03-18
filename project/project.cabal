@@ -4,11 +4,11 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:           homeworks
+name:           project
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/homeworks#readme>
-homepage:       https://github.com/githubuser/homeworks#readme
-bug-reports:    https://github.com/githubuser/homeworks/issues
+description:    Please see the README on GitHub at <https://github.com/githubuser/project#readme>
+homepage:       https://github.com/githubuser/project#readme
+bug-reports:    https://github.com/githubuser/project/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2026 Author name here
@@ -21,16 +21,15 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/homeworks
+  location: https://github.com/githubuser/project
 
 library
   exposed-modules:
       Lib
-      Solution
   other-modules:
-      Paths_homeworks
+      Paths_project
   autogen-modules:
-      Paths_homeworks
+      Paths_project
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -38,31 +37,31 @@ library
       base >=4.7 && <5
   default-language: Haskell2010
 
-executable homeworks-exe
+executable project-exe
   main-is: Main.hs
   other-modules:
-      Paths_homeworks
+      Paths_project
   autogen-modules:
-      Paths_homeworks
+      Paths_project
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , homeworks
+    , project
   default-language: Haskell2010
 
-test-suite homeworks-test
+test-suite project-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_homeworks
+      Paths_project
   autogen-modules:
-      Paths_homeworks
+      Paths_project
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , homeworks
+    , project
   default-language: Haskell2010
