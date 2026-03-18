@@ -77,3 +77,5 @@ merge (x:xs) (y:ys)
 
 hamming :: [Integer]
 hamming = 1 : merge (map (*2) hamming) (merge (map (*3) hamming) (map (*5) hamming))
+
+
