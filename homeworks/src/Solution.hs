@@ -66,3 +66,14 @@ picks [] = []
 picks (x:xs) = (x, xs) : [ (y, x:ys) | (y, ys) <- picks xs ]
 
 -- 6. Hamming Numbers
+
+merge :: Ord a => [a] -> [a] -> [a]
+marge [] ys = ys
+merge xs [] = xs
+merge (x:xs) (y:ys)
+    | x < y = x : merge xs (y:ys)
+    | y < x = y : merge (x:xs) ys
+    | otherwise = x : merge xs ys
+
+hamming :: [Integer]
+hamming = 1 : merge (map (*2) hamming) (merge (map (*3) hamming) (map (*5) hamming))
