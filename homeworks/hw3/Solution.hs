@@ -1,4 +1,6 @@
 import Data.Map (Map)
+import Data.List (permutations)
+import Control.Monad (guard)
 import qualified Data.Map as Map
 -- 1. Maze navigation
 
@@ -39,6 +41,26 @@ decryptWords :: Key -> [String] -> Maybe [String]
 decryptWords key = traverse (decrypt key)
 
 -- 3. Seating arrangements
+
+type Guest = String
+type Conflict = (Guest, Guest)
+
+isConflict :: [Conflict] -> (Guest, Guest) -> Bool
+isConflict conflicts (g1, g2) =
+    (g1, g2) `elem` conflicts || (g2, g1) `elem` conflicts
+
+hasConflict :: [Conflict] -> [Guest] -> Bool
+hasConflict conflicts ps = any (isConflict conflicts) pairs
+  where
+    adjacentPairs = zip ps (tail ps)
+    wrapAround = (last ps, head ps)
+    pairs = wrapAround : adjacentPairs
+
+seatings :: [Guest] -> [Conflict] -> [[Guest]]
+seatings guests conflicts = do
+    p <- permutations guests
+    guard (not (hasConflict conflicts p))
+    return p
 
 -- 4. Result monad with warnings
 
