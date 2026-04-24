@@ -64,6 +64,47 @@ seatings guests conflicts = do
 
 -- 4. Result monad with warnings
 
+data Result a = Failure String | Success a [String]
+    deriving Show
+
+-- a)
+
+instance Functor Result where
+    fmap _ (Failure msg)    = Failure msg
+    fmap f (Success x ws)   = Success (f x) ws
+
+instance Applicative Result where
+    pure x = Success x []
+
+    Failure msg    <*> _              = Failure msg
+    _              <*> Failure msg    = Failure msg
+    Success f ws1  <*> Success x ws2  = Success (f x) (ws1 ++ ws2)
+
+instance Monad Result where
+    Failure msg >>= _ = Failure msg
+    Success x ws1 >>= f = case f x of
+        Failure msg     -> Failure msg
+        Success y ws2   -> Success y (ws1 ++ ws2)
+
+-- b)
+warn :: String -> Result ()
+warn msg = Success () [msg]
+
+failure :: String -> Result a
+failure msg = Failure msg
+
+-- c)
+validateAge :: Int -> Result Int
+validateAge age
+    | age < 0   = failure "Age cannot be negative"
+    | age > 150 = do
+        warn "Age is above 150"
+        return age
+    | otherwise = return age
+
+validateAges :: [Int] -> Result [Int]
+validateAges ages = mapM validateAge ages
+
 -- 5. Evaluator with simplification log
 
 -- 6. ZipList — an Applicative that is not a Monad
