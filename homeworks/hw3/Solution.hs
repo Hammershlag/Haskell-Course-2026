@@ -2,6 +2,7 @@ import Data.Map (Map)
 import Data.List (permutations)
 import Control.Monad (guard)
 import qualified Data.Map as Map
+import Control.Monad.Writer (Writer, tell, runWriter)
 -- 1. Maze navigation
 
 type Pos = (Int, Int)
@@ -106,5 +107,58 @@ validateAges :: [Int] -> Result [Int]
 validateAges ages = mapM validateAge ages
 
 -- 5. Evaluator with simplification log
+
+data Expr = Lit Int | Add Expr Expr | Mul Expr Expr | Neg Expr
+    deriving Show
+simplify :: Expr -> Writer [String] Expr
+
+simplify (Lit n) = return (Lit n)
+
+-- Addition
+simplify (Add e1 e2) = do
+    s1 <- simplify e1
+    s2 <- simplify e2
+    case (s1, s2) of
+        (Lit 0, e) -> do
+            tell ["Add identity: 0 + e -> e"]
+            return e
+        (e, Lit 0) -> do
+            tell ["Add identity: e + 0 -> e"]
+            return e
+        (Lit a, Lit b) -> do
+            tell ["Add identity: Lit a + Lit b -> Lit (a+b)"]
+            return (Lit (a + b))
+        _ -> return (Add s1 s2)
+
+-- Multiplication
+simplify (Mul e1 e2) = do
+    s1 <- simplify e1
+    s2 <- simplify e2
+    case (s1, s2) of
+        (Lit 1, e) -> do
+            tell ["Mul identity: 1 * e -> e"]
+            return e
+        (e, Lit 1) -> do
+            tell ["Mul identity: e * 1 -> e"]
+            return e
+        (Lit 0, _) -> do
+            tell ["Mul identity: 0 * e -> Lit 0"]
+            return (Lit 0)
+        (_, Lit 0) -> do
+            tell ["Mul identity: e * 0 -> Lit 0"]
+            return (Lit 0)
+        (Lit a, Lit b) -> do
+            tell ["Mul identity: Lit a * Lit b -> Lit (a*b)"]
+            return (Lit (a * b))
+        _ -> return (Mul s1 s2)
+
+-- Negation
+simplify (Neg e) = do
+    s <- simplify e
+    case s of
+        Neg inner -> do
+            tell ["Neg identity: Neg (Neg e) -> e"]
+            return inner
+        _ -> return (Neg s)
 
 -- 6. ZipList — an Applicative that is not a Monad
