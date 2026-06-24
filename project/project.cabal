@@ -27,6 +27,7 @@ library
   exposed-modules:
       AST
       Lib
+      Parser
   other-modules:
       Paths_project
   autogen-modules:
