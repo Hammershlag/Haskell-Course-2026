@@ -28,6 +28,7 @@ library
       AST
       Lib
       Parser
+      VM
   other-modules:
       Paths_project
   autogen-modules:
