@@ -1,6 +1,9 @@
 module Lib
-    ( someFunc
+    ( module AST
+    , someFunc
     ) where
 
+import AST
+
 someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+someFunc = putStrLn "BlockChainLang VM"
