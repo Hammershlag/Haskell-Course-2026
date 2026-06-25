@@ -1,11 +1,110 @@
 module Main (main) where
 
 import Test.Hspec
+import Test.QuickCheck
 import qualified Data.Map as Map
 import Lib
+import Control.Monad (foldM)
 
 main :: IO ()
 main = hspec spec
+
+testAddresses :: [String]
+testAddresses = ["0xalice", "0xbob", "0xcharlie"]
+
+genAddress :: Gen String
+genAddress = elements testAddresses
+
+genTransferTx :: Gen Transaction
+genTransferTx = do
+  fromAddr <- genAddress
+  toAddr <- genAddress
+  amount <- choose (1, 100)
+  return $ Transaction "transfer" [VAddress toAddr, VInt amount] fromAddr
+
+genTransfers :: Gen [Transaction]
+genTransfers = listOf genTransferTx
+
+sumBalances :: ContractState -> Integer
+sumBalances state =
+  case Map.lookup "balances" state of
+    Just (VMap m) -> sum [ val | VInt val <- Map.elems m ]
+    _ -> 0
+
+testContract :: Contract
+testContract = case parseContract "test"
+  "contract TestCoin {\n\
+  \  state {\n\
+  \    balances: map<address, int> = empty;\n\
+  \    owner:    address          = sender;\n\
+  \  }\n\
+  \  transaction mint(to: address, amount: int) {\n\
+  \    require sender == owner;\n\
+  \    balances[to] := balances[to] + amount;\n\
+  \  }\n\
+  \  transaction transfer(to: address, amount: int) {\n\
+  \    require balances[sender] >= amount;\n\
+  \    balances[sender] := balances[sender] - amount;\n\
+  \    balances[to]     := balances[to] + amount;\n\
+  \  }\n\
+  \}" of
+    Right c -> c
+    Left err -> error err
+
+genValidLedger :: Gen Ledger
+genValidLedger = do
+  numBlocks <- choose (2, 5)
+  foldM (\ledger bId -> do
+    let tipId = blockId (last (getBlocks ledger))
+    txs <- listOf genTransferTx
+    let block = Block bId (Just tipId) txs
+    case addBlock ledger block of
+      Right newLedger -> return newLedger
+      Left err -> error err
+    ) emptyLedger [1..numBlocks]
+
+prop_supplyPreservation :: [Transaction] -> Bool
+prop_supplyPreservation txs =
+  let state0 = case initContractState testContract "0xowner" of
+        Right st -> st
+        Left err -> error err
+      mintTx = Transaction "mint" [VAddress "0xalice", VInt 1000] "0xowner"
+      state1 = case executeTransaction testContract mintTx state0 of
+        Right st -> st
+        Left err -> error err
+      finalState = foldl (\st tx ->
+        case executeTransaction testContract tx st of
+          Left _ -> st
+          Right nextSt -> nextSt
+        ) state1 txs
+  in sumBalances finalState == 1000
+
+prop_rollbackConsistency :: Transaction -> Bool
+prop_rollbackConsistency tx =
+  let stateInit = case initContractState testContract "0xowner" of
+        Right st -> st
+        Left err -> error err
+      mintTx = Transaction "mint" [VAddress "0xalice", VInt 1000] "0xowner"
+      state1 = case executeTransaction testContract mintTx stateInit of
+        Right st -> st
+        Left err -> error err
+      (state2, results) = processTransactions testContract [tx] state1
+  in case results of
+       [Left _] -> state2 == state1
+       [Right _] -> True
+       _ -> False
+
+prop_chainConsistency :: Ledger -> Bool
+prop_chainConsistency ledger =
+  let blocks = getBlocks ledger
+      idx = 1
+      blockToModify = blocks !! idx
+      modifiedBlock = blockToModify { blockId = blockId blockToModify + 999 }
+      modifiedBlocks = take idx blocks ++ [modifiedBlock] ++ drop (idx + 1) blocks
+      modifiedLedger = Ledger modifiedBlocks
+  in case verifyLedgerIntegrity modifiedLedger of
+       Left _ -> True
+       Right _ -> False
 
 spec :: Spec
 spec = do
@@ -167,3 +266,13 @@ spec = do
       addBlock ledger0 duplicateBlock `shouldSatisfy` (\r -> case r of
         Left _ -> True
         Right _ -> False)
+
+  describe "Property-Based Tests" $ do
+    it "verifies supply preservation across random transfers" $ do
+      property $ forAll genTransfers prop_supplyPreservation
+
+    it "verifies rollback consistency on transaction failure" $ do
+      property $ forAll genTransferTx prop_rollbackConsistency
+
+    it "verifies chain integrity fails when a block is modified" $ do
+      property $ forAll genValidLedger prop_chainConsistency

@@ -62,3 +62,4 @@ tests:
     dependencies:
     - project
     - hspec
+    - QuickCheck
